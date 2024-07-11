@@ -9,6 +9,7 @@
 *.zip
 BootStrap/arm7/build
 BootStrap/arm9/build
+BootStrap/*.bin
 data
 build
 hbmenu
