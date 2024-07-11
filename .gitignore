@@ -1,0 +1,14 @@
+*.DAT
+*.dat
+*.NDS
+*.nds
+*.elf
+*.bz2
+*.dsi
+*.cia
+*.zip
+BootStrap/arm7/build
+BootStrap/arm9/build
+data
+build
+hbmenu
