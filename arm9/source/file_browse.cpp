@@ -39,6 +39,8 @@
 
 using namespace std;
 
+extern void gbaMode();
+
 struct DirEntry {
 	string name;
 	bool isDirectory;
@@ -209,5 +211,11 @@ string browseForFile (const vector<string>& extensionList) {
 			fileOffset = 0;
 			showDirectoryContents (dirContents, screenOffset);
 		}
+		
+		if (pressed & KEY_X) {
+			gbaMode();
+			while(1)swiWaitForVBlank();
+		}
 	}
 }
+

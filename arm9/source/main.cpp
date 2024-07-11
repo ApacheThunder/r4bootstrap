@@ -183,11 +183,25 @@ int main(int argc, char **argv) {
 			if (!isDSiMode()) { gbaMode(); } else { FileBrowser(); }
 		} break;
 		case KEY_B: FileBrowser(); break;
+		case KEY_X: {
+			if((access("/Misc.nds", F_OK) == 0)) {
+				runNdsFile("/Misc.nds", 0, NULL);
+			} else {
+				FileBrowser();
+			}
+		} break;
+		case KEY_Y: {
+			if((access("/Misc2.nds", F_OK) == 0)) {
+				runNdsFile("/Misc2.nds", 0, NULL);
+			} else {
+				FileBrowser();
+			}
+		} break;
 		default: {
 			if((access("/r4tf.nds", F_OK) == 0)) {
-				return runNdsFile("/r4tf.nds", 0, NULL);
+				runNdsFile("/r4tf.nds", 0, NULL);
 			} else if((access("/boot.nds", F_OK) == 0)) {
-				return runNdsFile("/boot.nds", 0, NULL);
+				runNdsFile("/boot.nds", 0, NULL);
 			} else {
 				FileBrowser();
 			}
