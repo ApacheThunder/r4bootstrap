@@ -36,6 +36,7 @@
 #include "hbmenu_consolebg.h"
 #include "iconTitle.h"
 #include "skin.h"
+#include "tonccpy.h"
 #include "nds_loader_arm9.h"
 
 #define BG_256_COLOR (BIT(7))
@@ -70,67 +71,6 @@ void InitGUI(void) {
 }
 
 
-void Pixel_SUB(u16* screen, s16 x, s16 y, uint16 palet) {
-	uint16	bgsubAddress, h;
-
-	if (x < 0 || x > 256-1 || y < 0 || y > 192-1)return;
-
-	bgsubAddress = (x>>3)*32 + ((x&7)>>1) + (y>>3)*1024 + ((y&7)<<2);
-	h = screen[bgsubAddress];
-
-	if ((x & 1 ) == 0) {
-		h = palet | (h&0xff00);
-	} else {
-		h = (palet * 0x100) | ( h & 0xff);
-	}
-	screen[bgsubAddress] = h;
-}
-
-void ClearBG(uint16* screen,uint16 color) {
-	int x = 0, y = 0;
-	for(y = 0; y < 192; y++) {
-		for(x = 0; x < 256; x++)screen[(y)*256 + (x)] = color;
-	}
-}
-
-void ClearBG_SUB(uint16* screen, uint16 palet) {
-	int x = 0, y = 0;
-
-	for (y = 0; y < 192; y++) {
-		for(x = 0; x < 256; x++)Pixel_SUB(screen, x, y, palet);
-	}
-}
-
-void InitGUIForGBA() {
-	
-	defaultExceptionHandler();
-	
-	u16* MainScreen = VRAM_A;
-	u16* SubScreen = (u16*)BG_TILE_RAM_SUB(1);
-
-	int	i;
-
-	vramSetPrimaryBanks(VRAM_A_LCD, VRAM_B_LCD, VRAM_C_SUB_BG, VRAM_D_MAIN_BG);
-	powerOn(POWER_ALL);
-
-	videoSetMode(MODE_FB0 | DISPLAY_BG2_ACTIVE);
-	videoSetModeSub(MODE_0_2D | DISPLAY_BG0_ACTIVE );
-	REG_BG0CNT_SUB = BG_256_COLOR | BG_MAP_BASE(0) | BG_TILE_BASE(1);
-	uint16* map1 = (uint16*)BG_MAP_RAM_SUB(0);
-	for(i=0;i<(256*192/8/8);i++)map1[i]=i;
-	lcdMainOnTop();
-	ClearBG(MainScreen, RGB15(31,31,31));
-	BG_PALETTE_SUB[0] = RGB15(31,31,31);
-	BG_PALETTE_SUB[1] = RGB15(0,0,0);
-	BG_PALETTE_SUB[2] = RGB15(29,0,0);
-	BG_PALETTE_SUB[3] = RGB15(0,20,0);
-	BG_PALETTE_SUB[4] = RGB15(0,31,31);
-	BG_PALETTE_SUB[5] = RGB15(0,0,31);
-	BG_PALETTE_SUB[6] = RGB15(31,31,0);
-	ClearBG_SUB( SubScreen, 0 );
-	swiWaitForVBlank();
-}
-
 u16 Read_S98NOR_ID() {
 	*((vu16*)(FlashBase_S98)) = 0xF0;	
 	*((vu16*)(FlashBase_S98+0x555*2)) = 0xAA;
@@ -149,67 +89,45 @@ void SetKernelRomPage() {
 }
 
 
-void gba_frame() {
-	int	ret;
-	int	x = 0, y = 0;
-	u16	*pDstBuf1;
-	u16	*pDstBuf2;
-	
-	if (access("/gbaframe.bmp", F_OK) == 0) {
-		ret = LoadSkin(2, "/gbaframe.bmp");
-		if(ret)return;
-	}
-	
-	if (access("/GBA_SIGN/gbaframe.bmp", F_OK) == 0) {
-		ret = LoadSkin(2, "/GBA_SIGN/gbaframe.bmp");
-		if(ret)return;
-	}
-
-	if (access("/_system_/gbaframe.bmp", F_OK) == 0) {
-		ret = LoadSkin(2, "/_system_/gbaframe.bmp");
-		if(ret)return;
-	}
-	
-	if (access("/ttmenu/gbaframe.bmp", F_OK) == 0) {
-		ret = LoadSkin(2, "/ttmenu/gbaframe.bmp");
-		if(ret)return;
-	}
-
-	pDstBuf1 = (u16*)0x06000000;
-	pDstBuf2 = (u16*)0x06020000;
-	for(y = 0; y < 192; y++) {
-		for(x = 0; x < 256; x++) {
-			pDstBuf1[x] = 0x0000;
-			pDstBuf2[x] = 0x0000;
-		}
-		pDstBuf1 += 256;
-		pDstBuf2 += 256;
-	}
+void LoadGBAFrame() {
+	videoSetMode(MODE_5_2D | DISPLAY_BG3_ACTIVE);
+	videoSetModeSub(MODE_5_2D | DISPLAY_BG3_ACTIVE);
+	vramSetBankA(VRAM_A_MAIN_BG_0x06000000);
+	vramSetBankB(VRAM_B_MAIN_BG_0x06020000);
+	vramSetBankC(VRAM_C_SUB_BG_0x06200000);
+	vramSetBankD(VRAM_D_LCD);
+	// for the main screen
+	REG_BG3CNT = BG_BMP16_256x256 | BG_BMP_BASE(0) | BG_WRAP_OFF;
+	REG_BG3PA = 1 << 8; //scale x
+	REG_BG3PB = 0; //rotation x
+	REG_BG3PC = 0; //rotation y
+	REG_BG3PD = 1 << 8; //scale y
+	REG_BG3X = 0; //translation x
+	REG_BG3Y = 0; //translation y*/
+	toncset((void*)BG_BMP_RAM(0),0,0x18000);
+	toncset((void*)BG_BMP_RAM(8),0,0x18000);
+	swiWaitForVBlank();
+	if ((access("/gbaframe.bmp", F_OK) == 0) && LoadSkin(3, "/gbaframe.bmp"))return;
+	if ((access("/GBA_SIGN/gbaframe.bmp", F_OK) == 0) && LoadSkin(3, "/GBA_SIGN/gbaframe.bmp"))return;
+	if ((access("/_system_/gbaframe.bmp", F_OK) == 0) && LoadSkin(3, "/_system_/gbaframe.bmp"))return;
+	if ((access("/ttmenu/gbaframe.bmp", F_OK) == 0) && LoadSkin(3, "/ttmenu/gbaframe.bmp"))return;
 }
 
 void gbaMode() {
-	InitGUIForGBA();
-	
 	sysSetCartOwner(true);
 	
 	swiWaitForVBlank();
 	
 	if (Read_S98NOR_ID() == 0x223D)SetKernelRomPage();
 	
-	swiWaitForVBlank();
+	LoadGBAFrame();
 	
-	videoSetMode(0);
-	videoSetModeSub(0);
-
-	vramSetPrimaryBanks(VRAM_A_MAIN_BG, VRAM_B_MAIN_BG, VRAM_C_MAIN_BG, VRAM_D_MAIN_BG);
-
 	if(PersonalData->gbaScreen) { lcdMainOnBottom(); } else { lcdMainOnTop(); }
-
-	gba_frame();
 	
 	sysSetCartOwner(false);
 	fifoSendValue32(FIFO_USER_01, 1);
 	REG_IME = 0;
+	irqDisable(IRQ_VBLANK);
 	while(1)swiWaitForVBlank();
 } 
 

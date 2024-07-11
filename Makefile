@@ -8,9 +8,9 @@ endif
 export TARGET := _DS_MENU
 export TOPDIR := $(CURDIR)
 
-export HBMENU_MAJOR	:= 0
-export HBMENU_MINOR	:= 9
-export HBMENU_PATCH	:= 3
+export HBMENU_MAJOR	:= 1
+export HBMENU_MINOR	:= 0
+export HBMENU_PATCH	:= 1
 
 
 VERSION	:=	$(HBMENU_MAJOR).$(HBMENU_MINOR).$(HBMENU_PATCH)

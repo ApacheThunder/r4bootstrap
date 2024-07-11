@@ -150,23 +150,12 @@ static bool GetBMPHeader(u8 *pb,TBMPHeader *pBMPHeader) {
 static bool intLoadBM(const char *bmpfn,u16 *pbm,const u32 bmw,const u32 bmh) {
 	FILE *fh;
 
-
-//  bmerrstr1[0]=0;
-//  bmerrstr2[0]=0;
+	if(pbm == NULL)return(false);
   
-	if(pbm == NULL) {
-//		snprintf(bmerrstr1,256,"BitmapMemory is NULL.");
-//		snprintf(bmerrstr2,256,"The memory is insufficient?");
-//		_consolePrintf("%s\n",bmerrstr1);
-//		_consolePrintf("%s\n",bmerrstr2);
-		return(false);
-	}
-  
-  u8 *bmdata = NULL;
-  u32 bmsize;
+	u8 *bmdata = NULL;
+	u32 bmsize;
 
     fh=fopen(bmpfn, "rb");
-
   
 	if(fh != NULL) {
 		fseek(fh, 0, SEEK_END);
@@ -178,19 +167,11 @@ static bool intLoadBM(const char *bmpfn,u16 *pbm,const u32 bmw,const u32 bmh) {
 		fclose(fh);
 	}
 
-	if(bmdata==NULL){
-		return(false);
-	}/* else {
-		_consolePrintf("loadskin /shell/%s\n",bmpfn);
-	}*/
-  
+	if(bmdata==NULL)return(false);
+	
 	TBMPHeader BMPHeader;
   
 	if(!GetBMPHeader(bmdata,&BMPHeader)) {
-//		snprintf(bmerrstr1,256,"Request /shell/%s WindowsBitmapFormat",bmpfn);
-//		snprintf(bmerrstr2,256,"%s",BMP_LoadErrorStr);
-//		_consolePrintf("%s\n",bmerrstr1);
-//		_consolePrintf("%s\n",bmerrstr2);
 		free(bmdata); bmdata=NULL;
 		return(false);
 	}
@@ -202,17 +183,12 @@ static bool intLoadBM(const char *bmpfn,u16 *pbm,const u32 bmw,const u32 bmh) {
 	}
   
 	if(BMPHeader.biBitCount==32) {
-		// _consolePrintf("Error. not support 32bit color.");
 		free(bmdata);
-		bmdata=NULL;
+		bmdata = NULL;
 		return false;
 	}
   
 	if((BMPHeader.biWidth<bmw)||(BMPHeader.biHeight<bmh)) {
-//		snprintf(bmerrstr1,256,"Request /shell/%s WindowsBitmapFormat",bmpfn);
-//		snprintf(bmerrstr2,256,"%d x %dpixel 8 or 24bitcolor NoCompression.",bmw,bmh);
-//		_consolePrintf("%s\n",bmerrstr1);
-//		_consolePrintf("%s\n",bmerrstr2);
 		free(bmdata);
 		bmdata=NULL;
 		return false;
@@ -283,37 +259,35 @@ static bool intLoadBM(const char *bmpfn,u16 *pbm,const u32 bmw,const u32 bmh) {
 
 ALIGN(4) static u16 *pBuf;
 
-bool LoadSkin(int mod, const char *Name) {
-	
-	u16	*pDstBuf1;
-	u16	*pDstBuf2;
+bool LoadSkin(int mode, const char *Name) {
+	u16	*pDstBuf1, *pDstBuf2;
 
 	pBuf = (u16*)malloc(256*192*2);
-	if(!intLoadBM(Name, pBuf, 256, 192)) { free(pBuf); return false; }
+	if (!intLoadBM(Name, pBuf, 256, 192)) { free(pBuf); return false; }
 
-	switch (mod) {
+	switch (mode) {
 		case 0: pDstBuf1 = (u16*)0x06020000; break;
 		case 1: pDstBuf1 = (u16*)0x06220000; break;
 		case 2:
 			pDstBuf1 = (u16*)0x06000000;
 			pDstBuf2 = (u16*)0x06020000;
-			// pDstBuf1 = (u16*)0x06800000;
-			// pDstBuf2 = (u16*)0x06820000;
 			break;
+		case 3: {
+			pDstBuf1 = BG_BMP_RAM(0);
+			pDstBuf2 = BG_BMP_RAM(8);
+		} break;
 		default: pDstBuf1 = (u16*)0x06020000; break;
 	}
 
-	for(s32 y=0;y<192;y++) {
-		for(s32 x=0;x<256;x++) {
-			pDstBuf1[x]=pBuf[x];
-			if(mod == 2)pDstBuf2[x]=pBuf[x];
+	for (s32 y = 0; y < 192; y++) {
+		for (s32 x = 0; x < 256; x++) {
+			pDstBuf1[x] = pBuf[x];
+			if ((mode == 2) || (mode == 3))pDstBuf2[x] = pBuf[x];
 		}
-		pDstBuf1+=256;
-		if(mod == 2)pDstBuf2+=256;
-		pBuf+=256;
+		pDstBuf1 += 256;
+		if ((mode == 2) || (mode == 3))pDstBuf2 += 256;
+		pBuf += 256;
 	}
-
-	// free(pBuf);
 	return true;
 }
 
