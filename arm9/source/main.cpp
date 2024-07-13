@@ -45,10 +45,14 @@
 using namespace std;
 
 volatile bool guiEnabled = false;
+volatile bool gbaGuiEnabled = false;
+
+const bool BlankScreenOnBoot = true;
 
 void InitGUI(void) {
 	if (guiEnabled)return;
 	guiEnabled = true;
+	gbaGuiEnabled = false;
 	iconTitleInit();
 	videoSetModeSub(MODE_4_2D);
 	vramSetBankC(VRAM_C_SUB_BG);
@@ -70,6 +74,29 @@ void InitGUI(void) {
 	consoleSetWindow(console, 1, 1, 30, 22);
 }
 
+void InitGUIForGBA() {
+	if (gbaGuiEnabled)return;
+	gbaGuiEnabled = true;
+	guiEnabled = false;
+	videoSetMode(MODE_5_2D | DISPLAY_BG3_ACTIVE);
+	videoSetModeSub(MODE_5_2D | DISPLAY_BG3_ACTIVE);
+	vramSetBankA(VRAM_A_MAIN_BG_0x06000000);
+	vramSetBankB(VRAM_B_MAIN_BG_0x06020000);
+	vramSetBankC(VRAM_C_SUB_BG_0x06200000);
+	vramSetBankD(VRAM_D_LCD);
+	// for the main screen
+	REG_BG3CNT = BG_BMP16_256x256 | BG_BMP_BASE(0) | BG_WRAP_OFF;
+	REG_BG3PA = 1 << 8; //scale x
+	REG_BG3PB = 0; //rotation x
+	REG_BG3PC = 0; //rotation y
+	REG_BG3PD = 1 << 8; //scale y
+	REG_BG3X = 0; //translation x
+	REG_BG3Y = 0; //translation y*/
+	toncset((void*)BG_BMP_RAM(0),0,0x18000);
+	toncset((void*)BG_BMP_RAM(8),0,0x18000);
+	swiWaitForVBlank();
+}
+
 
 u16 Read_S98NOR_ID() {
 	*((vu16*)(FlashBase_S98)) = 0xF0;	
@@ -88,25 +115,8 @@ void SetKernelRomPage() {
 	*(vu16*)0x09FC0000 = 0x1500;
 }
 
-
 void LoadGBAFrame() {
-	videoSetMode(MODE_5_2D | DISPLAY_BG3_ACTIVE);
-	videoSetModeSub(MODE_5_2D | DISPLAY_BG3_ACTIVE);
-	vramSetBankA(VRAM_A_MAIN_BG_0x06000000);
-	vramSetBankB(VRAM_B_MAIN_BG_0x06020000);
-	vramSetBankC(VRAM_C_SUB_BG_0x06200000);
-	vramSetBankD(VRAM_D_LCD);
-	// for the main screen
-	REG_BG3CNT = BG_BMP16_256x256 | BG_BMP_BASE(0) | BG_WRAP_OFF;
-	REG_BG3PA = 1 << 8; //scale x
-	REG_BG3PB = 0; //rotation x
-	REG_BG3PC = 0; //rotation y
-	REG_BG3PD = 1 << 8; //scale y
-	REG_BG3X = 0; //translation x
-	REG_BG3Y = 0; //translation y*/
-	toncset((void*)BG_BMP_RAM(0),0,0x18000);
-	toncset((void*)BG_BMP_RAM(8),0,0x18000);
-	swiWaitForVBlank();
+	InitGUIForGBA();
 	if ((access("/gbaframe.bmp", F_OK) == 0) && LoadSkin(3, "/gbaframe.bmp"))return;
 	if ((access("/GBA_SIGN/gbaframe.bmp", F_OK) == 0) && LoadSkin(3, "/GBA_SIGN/gbaframe.bmp"))return;
 	if ((access("/_system_/gbaframe.bmp", F_OK) == 0) && LoadSkin(3, "/_system_/gbaframe.bmp"))return;
@@ -171,6 +181,7 @@ int FileBrowser() {
 }
 
 int main(int argc, char **argv) {
+	if (BlankScreenOnBoot)InitGUIForGBA();
 	// overwrite reboot stub identifier
 	// so tapping power on DSi returns to DSi menu
 	extern u64 *fake_heap_end;
