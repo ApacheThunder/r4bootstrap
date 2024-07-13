@@ -10,7 +10,7 @@ export TOPDIR := $(CURDIR)
 
 export HBMENU_MAJOR	:= 1
 export HBMENU_MINOR	:= 0
-export HBMENU_PATCH	:= 1
+export HBMENU_PATCH	:= 2
 
 
 VERSION	:=	$(HBMENU_MAJOR).$(HBMENU_MINOR).$(HBMENU_PATCH)

@@ -143,6 +143,11 @@ int stop(void) {
 int FileBrowser() {
 	InitGUI();
 	consoleClear();
+	while(1) {
+		swiWaitForVBlank();
+		scanKeys();
+		if (!keysHeld())break;
+	}
 	vector<string> extensionList = argsGetExtensionList();
 	chdir("/nds");
 	while(1) {
@@ -179,10 +184,9 @@ int main(int argc, char **argv) {
 	swiWaitForVBlank();
 	scanKeys();
 	switch (keysDown()) {
-		case KEY_A: {
+		case KEY_B: {
 			if (!isDSiMode()) { gbaMode(); } else { FileBrowser(); }
 		} break;
-		case KEY_B: FileBrowser(); break;
 		case KEY_X: {
 			if((access("/Misc.nds", F_OK) == 0)) {
 				runNdsFile("/Misc.nds", 0, NULL);
@@ -197,7 +201,7 @@ int main(int argc, char **argv) {
 				FileBrowser();
 			}
 		} break;
-		default: {
+		case 0: {
 			if((access("/r4tf.nds", F_OK) == 0)) {
 				runNdsFile("/r4tf.nds", 0, NULL);
 			} else if((access("/boot.nds", F_OK) == 0)) {
@@ -206,6 +210,7 @@ int main(int argc, char **argv) {
 				FileBrowser();
 			}
 		} break;
+		default: FileBrowser(); break;
 	}
 	return stop();
 }
